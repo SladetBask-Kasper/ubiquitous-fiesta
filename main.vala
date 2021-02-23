@@ -1,13 +1,14 @@
 using Gtk;
+using Soup;
 
 public class TextFileViewer : Window {
 
     private TextView text_view;
 
     public TextFileViewer () {
-        this.title = "Text File Viewer";
+        this.title = "Bible Viewer";
         this.window_position = WindowPosition.CENTER;
-        set_default_size (400, 300);
+        set_default_size (400*4, 300*4);
 
         var toolbar = new Toolbar ();
         toolbar.get_style_context ().add_class (STYLE_CLASS_PRIMARY_TOOLBAR);
@@ -18,8 +19,10 @@ public class TextFileViewer : Window {
         open_button.is_important = true;
         toolbar.add (open_button);
         open_button.clicked.connect (on_open_clicked);
-
+        
+        string initialPage = this.getChapter("https://www.mechon-mamre.org/p/pt/pt26", "01");
         this.text_view = new TextView ();
+        this.text_view.buffer.text = initialPage;
         this.text_view.editable = false;
         this.text_view.cursor_visible = false;
 
@@ -43,6 +46,15 @@ public class TextFileViewer : Window {
         }
         file_chooser.destroy ();
     }
+    private string getChapter(string link, string num) {
+        var fileEnding = ".htm";
+        string url = "%s%s%s".printf (link,num,fileEnding);
+        stdout.printf ("Getting chapter from %s\n", url);
+        var session = new Soup.Session ();
+        var message = new Soup.Message ("GET", url);
+        session.send_message (message);
+        return (string) message.response_body.data   ;
+    }
 
     private void open_file (string filename) {
         try {
@@ -59,9 +71,10 @@ public class TextFileViewer : Window {
 
         var window = new TextFileViewer ();
         window.destroy.connect (Gtk.main_quit);
-        try { window.icon = new Gdk.Pixbuf.from_file ("appimg.png"); } 
+        var iconPath = "appimg.png";
+        try { window.icon = new Gdk.Pixbuf.from_file (iconPath); } 
         catch (Error e) {
-            stderr.printf ("Could not load application icon: %s\n", e.message);
+            stderr.printf ("Could not load application icon: %s\n%s\n", iconPath, e.message);
         }
         window.show_all ();
 
